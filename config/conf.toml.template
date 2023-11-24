@@ -1,0 +1,33 @@
+appname = "sqlc-adapter"
+[mysql]
+host = "127.0.0.1"
+password = ""
+port = 3306
+tableprefix = ""
+user = "root"
+dbname = "test_1"
+
+
+# 核心配置
+[Redis]
+Host = "127.0.0.1:6379"
+Type = "node"
+Pass = "123456"
+Key = "rpc-ucenter"
+
+[[Cache]]
+Weight=60
+[Cache.RedisConf]
+Host = ""
+Type = "node2"
+Pass = "ningzaichun"
+
+
+[[Cache]]
+# 这个weight目前不知道是什么东西，但是如果填成所有节点weight的和为0的话，会报错，说no cache nodes
+Weight = 40
+[Cache.RedisConf]
+Host = "127.0.0.1:6379"
+# 这个type，代表是单节点，还有一个好像代表集群
+Type = "node1"
+Pass = "123456"
