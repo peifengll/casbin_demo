@@ -32,16 +32,13 @@ func Init() {
 	if err != nil {
 		log.Fatalf("db 加载失败, %v", err)
 	}
-	cacheada, err = cacheadapter.NewAdapter(db, client)
-	if err != nil {
-		log.Fatalf("cacheadapter  加载失败, %v", err)
-	}
+	cacheada = cacheadapter.NewAdapter(db, client)
 
 }
 
 func TestInitPolicy(t *testing.T) {
 	Init()
-	Init()
+	cacheada.AddMorePolicy()
 	// 这个model初始化估计光这样不行，看下边好像还有啥子
 	e, err := casbin.NewEnforcer("D:\\code\\go\\trys\\casbin_demo\\config\\rbac_model.conf", cacheada)
 	//fmt.Println("这之前执行过嘛")

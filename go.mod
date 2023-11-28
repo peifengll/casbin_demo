@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/casbin/casbin/v2 v2.40.6
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/google/uuid v1.1.2
 	github.com/spf13/viper v1.17.0
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/gorm v1.25.5

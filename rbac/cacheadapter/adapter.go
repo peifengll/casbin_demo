@@ -20,22 +20,22 @@ type CacheAdapter struct {
 	//其先要查看这个看自己需要做什么操作
 	// 在初始化的时候生成，使用uuid保证这个实例的是否需要更新？
 	// 如果redis里边没有这个 键 ，那么一定就是要更新
-	CasbinIndicate string
-	tableName      string
+	//CasbinIndicate string
+	tableName string
 	//databaseName   string
 	//r_adapter      *redisadapter.Adapter
 	redisCli *redis.Client
 	db       *gorm.DB
 }
 
-func NewAdapter(db *gorm.DB, r *redis.Client, params ...interface{}) (*CacheAdapter, error) {
+func NewAdapter(db *gorm.DB, r *redis.Client, params ...interface{}) *CacheAdapter {
 	a := &CacheAdapter{
-		CasbinIndicate: Casbin_Indicate_Prefix,
-		tableName:      defaultTableName,
-		redisCli:       r,
-		db:             db,
+		//CasbinIndicate: Casbin_Indicate_Prefix,
+		tableName: defaultTableName,
+		redisCli:  r,
+		db:        db,
 	}
-	return a, nil
+	return a
 }
 
 func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
@@ -45,7 +45,7 @@ func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
 	if err != nil {
 		log.Fatalf("redis.Exists err:%v \n", err)
 	}
-	fmt.Println("执行*1")
+	//fmt.Println("执行*1")
 	if exists == 1 {
 		//fmt.Println("+++++")
 		//	 key存在
@@ -339,4 +339,18 @@ func (a *CacheAdapter) toPolicyRuleStr(line *CasbinRule) (res string) {
 	}
 	return
 
+}
+
+// AddMorePolicy （will delete） 增加1w个策略
+func (a *CacheAdapter) AddMorePolicy() {
+	for i := 0; i < 10000; i++ {
+		line := &CasbinRule{
+			Ptype: "p",
+			V0:    "zhangsan",
+			V1:    fmt.Sprintf("data%d", i),
+			V2:    "read",
+			V3:    "allow",
+		}
+		a.db.Create(&line)
+	}
 }
