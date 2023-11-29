@@ -1,4 +1,4 @@
-package db
+package po
 
 type CasbinRule struct {
 	ID    uint   `gorm:"primaryKey;autoIncrement"`
@@ -9,4 +9,8 @@ type CasbinRule struct {
 	V3    string `gorm:"size:100"`
 	V4    string `gorm:"size:100"`
 	V5    string `gorm:"size:100"`
+}
+
+func (r *CasbinRule) TableName() string {
+	return "casbin_rule"
 }
