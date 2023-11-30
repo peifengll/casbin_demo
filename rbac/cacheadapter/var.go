@@ -1,5 +1,7 @@
 package cacheadapter
 
+import "github.com/prometheus/client_golang/prometheus"
+
 const (
 	// 在mysql数据库里
 	defaultDatabaseName = "casbin"
@@ -20,4 +22,17 @@ const (
 	Casbin_Policy_Del = "del:"
 	// Casbin_Policy_Load 重新加载
 	Casbin_Policy_Load = "load"
+)
+
+const NS = "PolicyLoad"
+
+var (
+	LoadFormCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: NS,
+			Name:      "policy_load_total",
+			Help:      "A counter for policy load from mysql and redis.",
+		},
+		[]string{"from"},
+	)
 )

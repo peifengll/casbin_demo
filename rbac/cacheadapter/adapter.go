@@ -8,6 +8,7 @@ import (
 	"github.com/casbin/casbin/v2/persist"
 	"github.com/casbin/casbin/v2/util"
 	"github.com/go-redis/redis/v8"
+	"github.com/prometheus/client_golang/prometheus"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
 	"log"
@@ -47,6 +48,8 @@ func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
 	}
 	//fmt.Println("执行*1")
 	if exists == 1 {
+
+		LoadFormCounter.With(prometheus.Labels{"from": "redis"}).Inc()
 		//fmt.Println("+++++")
 		//	 key存在
 		return a.loadPolicyRedis(ctx, model, persist.LoadPolicyArray)
@@ -54,6 +57,7 @@ func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
 		//fmt.Println("-------")
 		//	 查数据库，然后放进redis
 		var lines []CasbinRule
+		LoadFormCounter.With(prometheus.Labels{"from": "mysql"}).Inc()
 		if err := a.db.Order("ID").Find(&lines).Error; err != nil {
 			return err
 		}
