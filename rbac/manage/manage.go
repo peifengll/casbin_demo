@@ -129,7 +129,11 @@ func (h *Manager) RemoveRuleByRules(ctx context.Context, ptype string, rules [][
 func (h *Manager) AfterOp() error {
 	ctx := context.Background()
 	// 目前就是删除所有的preifix为前缀的东西
-	return h.deleteKeysByPrefix(ctx)
+	err := h.deleteKeysByPrefix(ctx)
+	if err != nil {
+		return err
+	}
+	return db.DelPolicyInRedis(h.redisCli)
 }
 
 func (h *Manager) deleteKeysByPrefix(ctx context.Context) error {
