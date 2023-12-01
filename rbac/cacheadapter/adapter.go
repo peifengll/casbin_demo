@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
 	"log"
+	"time"
 
 	"strings"
 )
@@ -50,18 +51,25 @@ func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
 	}
 	//fmt.Println("执行*1")
 	if exists == 1 {
-		LoadFormCounter.With(prometheus.Labels{"from": "redis"}).Inc()
 		//fmt.Println("+++++")
 		//	 key存在
-		return a.loadPolicyRedis(ctx, model, persist.LoadPolicyArray)
+		errr := a.loadPolicyRedis(ctx, model, persist.LoadPolicyArray)
+		if errr != nil {
+			LoadFormCounter.With(prometheus.Labels{"from": "redis", "status": "err"}).Inc()
+		}
+		LoadFormCounter.With(prometheus.Labels{"from": "redis", "status": "ok"}).Inc()
+		return
 	} else {
 		//fmt.Println("-------")
 		//	 查数据库，然后放进redis
 		var lines []po.CasbinRule
-		LoadFormCounter.With(prometheus.Labels{"from": "mysql"}).Inc()
+		start := time.Now()
 		if err := a.db.Order("ID").Find(&lines).Error; err != nil {
+			LoadFormCounter.With(prometheus.Labels{"from": "mysql", "status": "err"}).Inc()
 			return err
 		}
+		LoadFormCounter.With(prometheus.Labels{"from": "mysql", "status": "ok"}).Inc()
+		LoadTimeHistogram.WithLabelValues("mysql").Observe(time.Since(start).Seconds())
 		// 放进redis，line是持有了数据库所有规则
 		for _, v := range lines {
 
@@ -93,8 +101,10 @@ func loadPolicyLine(line po.CasbinRule, model model.Model) error {
 }
 
 func (a *CacheAdapter) loadPolicyRedis(ctx context.Context, model model.Model, handler func([]string, model.Model)) (err error) {
+	start := time.Now()
 	// 0, -1 fetches all entries from the list
 	rules, err := a.redisCli.LRange(ctx, Policy_Key, 0, -1).Result()
+	LoadTimeHistogram.WithLabelValues("redis").Observe(time.Since(start).Seconds())
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,15 @@ var (
 			Name:      "policy_load_total",
 			Help:      "A counter for policy load from mysql and redis.",
 		},
-		[]string{"from"},
+		[]string{"from", "status"},
 	)
+	LoadTimeHistogram = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace:   NS,
+			Subsystem:   "",
+			Name:        "load_seconds",
+			Help:        "Histogram of loading policy response latency in seconds.",
+			ConstLabels: nil,
+			Buckets:     nil,
+		}, []string{"from"})
 )
