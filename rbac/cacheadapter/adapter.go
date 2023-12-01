@@ -8,6 +8,8 @@ import (
 	"github.com/casbin/casbin/v2/persist"
 	"github.com/casbin/casbin/v2/util"
 	"github.com/go-redis/redis/v8"
+	"github.com/peifengll/casbin_demo/rbac/convterter"
+	"github.com/peifengll/casbin_demo/rbac/persistence/po"
 	"github.com/prometheus/client_golang/prometheus"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
@@ -48,7 +50,6 @@ func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
 	}
 	//fmt.Println("执行*1")
 	if exists == 1 {
-
 		LoadFormCounter.With(prometheus.Labels{"from": "redis"}).Inc()
 		//fmt.Println("+++++")
 		//	 key存在
@@ -56,7 +57,7 @@ func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
 	} else {
 		//fmt.Println("-------")
 		//	 查数据库，然后放进redis
-		var lines []CasbinRule
+		var lines []po.CasbinRule
 		LoadFormCounter.With(prometheus.Labels{"from": "mysql"}).Inc()
 		if err := a.db.Order("ID").Find(&lines).Error; err != nil {
 			return err
@@ -76,7 +77,7 @@ func (a *CacheAdapter) LoadPolicy(model model.Model) (err error) {
 	}
 	return nil
 }
-func loadPolicyLine(line CasbinRule, model model.Model) error {
+func loadPolicyLine(line po.CasbinRule, model model.Model) error {
 	var p = []string{line.Ptype,
 		line.V0, line.V1, line.V2,
 		line.V3, line.V4, line.V5}
@@ -122,7 +123,7 @@ func (a *CacheAdapter) addPolicyToRedis(ctx context.Context, rule string) (err e
 	return
 }
 func (a *CacheAdapter) addPolicyToMysql(ctx context.Context, ptype string, rule []string) (err error) {
-	line := a.toPolicyLine(ptype, rule)
+	line := convterter.ToPolicyPo(ptype, rule)
 	err = a.db.Create(&line).Error
 	return
 }
@@ -141,11 +142,11 @@ func (a *CacheAdapter) savePolicy(model model.Model) error {
 		tx.Rollback()
 		return err
 	}
-	var lines []CasbinRule
+	var lines []po.CasbinRule
 	flushEvery := 1000
 	for ptype, ast := range model["p"] {
 		for _, rule := range ast.Policy {
-			lines = append(lines, a.toPolicyLine(ptype, rule))
+			lines = append(lines, convterter.ToPolicyPo(ptype, rule))
 			if len(lines) > flushEvery {
 				if err := tx.Create(&lines).Error; err != nil {
 					tx.Rollback()
@@ -158,7 +159,7 @@ func (a *CacheAdapter) savePolicy(model model.Model) error {
 
 	for ptype, ast := range model["g"] {
 		for _, rule := range ast.Policy {
-			lines = append(lines, a.toPolicyLine(ptype, rule))
+			lines = append(lines, convterter.ToPolicyPo(ptype, rule))
 			if len(lines) > flushEvery {
 				if err := tx.Create(&lines).Error; err != nil {
 					tx.Rollback()
@@ -199,7 +200,7 @@ func (a *CacheAdapter) delPolicyInRedis() (err error) {
 // 注意redis 删除的时候要放四条规则进去，有一个是deny什么的
 func (a *CacheAdapter) RemovePolicy(sec string, ptype string, rule []string) error {
 	//	 同时删掉mysql跟redis
-	line := a.toPolicyLine(ptype, rule)
+	line := convterter.ToPolicyPo(ptype, rule)
 	err := a.rawDelete(a.db, line)
 	if err != nil {
 		return err
@@ -217,7 +218,7 @@ func (a *CacheAdapter) removePolicyInRedis(rule string) (err error) {
 	return
 }
 
-func (a *CacheAdapter) rawDelete(db *gorm.DB, line CasbinRule) error {
+func (a *CacheAdapter) rawDelete(db *gorm.DB, line po.CasbinRule) error {
 	queryArgs := []interface{}{line.Ptype}
 
 	queryStr := "ptype = ?"
@@ -246,14 +247,14 @@ func (a *CacheAdapter) rawDelete(db *gorm.DB, line CasbinRule) error {
 		queryArgs = append(queryArgs, line.V5)
 	}
 	args := append([]interface{}{queryStr}, queryArgs...)
-	err := db.Delete(&CasbinRule{}, args...).Error
+	err := db.Delete(&po.CasbinRule{}, args...).Error
 	return err
 }
 
 // RemoveFilteredPolicy 从持久层删除符合筛选条件的policy规则
 // 删除了之后可以考虑直接清除redis，或是也一个一个的找到并删除
 func (a *CacheAdapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
-	line := &CasbinRule{}
+	line := &po.CasbinRule{}
 	line.Ptype = ptype
 	if fieldIndex == -1 {
 		return a.rawDelete(a.db, *line)
@@ -301,33 +302,34 @@ func buildRuleStr(ptype string, rule []string) string {
 	return ptype + ", " + util.ArrayToString(rule)
 }
 
-func (a *CacheAdapter) toPolicyLine(ptype string, rule []string) CasbinRule {
-	line := &CasbinRule{}
+//
+//func (a *CacheAdapter) toPolicyLine(ptype string, rule []string) po.CasbinRule {
+//	line := &po.CasbinRule{}
+//
+//	line.Ptype = ptype
+//	if len(rule) > 0 {
+//		line.V0 = rule[0]
+//	}
+//	if len(rule) > 1 {
+//		line.V1 = rule[1]
+//	}
+//	if len(rule) > 2 {
+//		line.V2 = rule[2]
+//	}
+//	if len(rule) > 3 {
+//		line.V3 = rule[3]
+//	}
+//	if len(rule) > 4 {
+//		line.V4 = rule[4]
+//	}
+//	if len(rule) > 5 {
+//		line.V5 = rule[5]
+//	}
+//
+//	return *line
+//}
 
-	line.Ptype = ptype
-	if len(rule) > 0 {
-		line.V0 = rule[0]
-	}
-	if len(rule) > 1 {
-		line.V1 = rule[1]
-	}
-	if len(rule) > 2 {
-		line.V2 = rule[2]
-	}
-	if len(rule) > 3 {
-		line.V3 = rule[3]
-	}
-	if len(rule) > 4 {
-		line.V4 = rule[4]
-	}
-	if len(rule) > 5 {
-		line.V5 = rule[5]
-	}
-
-	return *line
-}
-
-func (a *CacheAdapter) toPolicyRuleStr(line *CasbinRule) (res string) {
+func (a *CacheAdapter) toPolicyRuleStr(line *po.CasbinRule) (res string) {
 	if line.V5 != "" {
 		res = buildRuleStr(line.Ptype, []string{line.V0, line.V1, line.V2, line.V3, line.V4, line.V5})
 	} else if line.V4 != "" {
@@ -348,7 +350,7 @@ func (a *CacheAdapter) toPolicyRuleStr(line *CasbinRule) (res string) {
 // AddMorePolicy （will delete） 增加1w个策略
 func (a *CacheAdapter) AddMorePolicy() {
 	for i := 0; i < 10000; i++ {
-		line := &CasbinRule{
+		line := &po.CasbinRule{
 			Ptype: "p",
 			V0:    "zhangsan",
 			V1:    fmt.Sprintf("data%d", i),

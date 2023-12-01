@@ -14,6 +14,7 @@ type Handler struct {
 	c        *manage.Checker
 }
 
+// NewHandler path 是model配置文件的路径
 func NewHandler(client *redis.Client, db *gorm.DB, prefix, path string) (*Handler, error) {
 	uid := uuid.New()
 	cacheada := cacheadapter.NewAdapter(db, client)
