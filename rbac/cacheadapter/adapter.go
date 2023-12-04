@@ -32,6 +32,7 @@ type CacheAdapter struct {
 	db       *gorm.DB
 }
 
+// 使用前请确保已经建立了数据库，数据表可以自动创建
 func NewAdapter(db *gorm.DB, r *redis.Client, params ...interface{}) *CacheAdapter {
 	a := &CacheAdapter{
 		//CasbinIndicate: Casbin_Indicate_Prefix,
@@ -39,6 +40,7 @@ func NewAdapter(db *gorm.DB, r *redis.Client, params ...interface{}) *CacheAdapt
 		redisCli:  r,
 		db:        db,
 	}
+	db.Exec(createtablesql)
 	return a
 }
 
