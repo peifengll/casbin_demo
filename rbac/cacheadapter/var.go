@@ -15,7 +15,9 @@ const (
 
 	//往下都是值，也就是需要的操作
 
-	// Casbin_Policy_Add 添加列表末尾的几行进入内存，addplicy命令
+	// Casbin_Policy_Ad
+	//
+	//d 添加列表末尾的几行进入内存，addplicy命令
 	// 像deny就是直接加一条就可以了
 	Casbin_Policy_Add = "add:"
 	// Casbin_Policy_Del 删除谁的什么权限，不能做就重新加载
@@ -42,6 +44,13 @@ var (
 			Name:        "load_seconds",
 			Help:        "Histogram of loading policy response latency in seconds.",
 			ConstLabels: nil,
-			Buckets:     nil,
+			Buckets:     []float64{0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 5.0},
 		}, []string{"from"})
 )
+
+func GetCollectors() []prometheus.Collector {
+	return []prometheus.Collector{
+		LoadFormCounter,
+		LoadTimeHistogram,
+	}
+}

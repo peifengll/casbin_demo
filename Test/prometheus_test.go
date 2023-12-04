@@ -12,8 +12,8 @@ import (
 func TestLoadFrom(t *testing.T) {
 	registry := prometheus.NewRegistry()
 
-	registry.MustRegister(cacheadapter.LoadFormCounter)
-	registry.MustRegister(cacheadapter.LoadTimeHistogram)
+	registry.MustRegister(cacheadapter.GetCollectors()...)
+	//registry.MustRegister(cacheadapter.LoadTimeHistogram)
 	//cacheadapter.LoadFormCounter.WithLabelValues("mysql").
 	go func() {
 		for i := 0; i < 50; i++ {
